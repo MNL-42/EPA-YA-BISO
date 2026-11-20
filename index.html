@@ -32,7 +32,8 @@ for(let i=0;i<15;i++){let x=80+i*145,y=350;rect(x,y,48,25,['#e6b44e','#d65d43','
 ctx.fillStyle='#fff';ctx.font='bold 17px Arial';ctx.fillText('GOMBE',690,300);ctx.fillText('MATONGE',850,880);ctx.fillText('LIMETE',1680,1390);
 ctx.fillStyle='#9bd7e4';ctx.font='12px Arial';ctx.fillText('AVENUE DU COMMERCE',640,365);ctx.fillText('BOULEVARD DU 30 JUIN',700,925);
 // parked taxis and traffic
-car(780,650,'#e8bd39',0);\nfor(let i=0;i<11;i++){let x=(i*223+300)%world.w,y=[405,970,1480][i%3]+(i%2)*38;car(x,y,'#e9c43e',0)}
+car(780,650,'#e8bd39',0);
+for(let i=0;i<11;i++){let x=(i*223+300)%world.w,y=[405,970,1480][i%3]+(i%2)*38;car(x,y,'#e9c43e',0)}
 if(player.inCar){car(player.x,player.y,'#e8bd39',player.angle)}else{ctx.save();ctx.translate(player.x,player.y);ctx.rotate(player.angle);ctx.fillStyle='#182a36';ctx.beginPath();ctx.ellipse(0,5,10,13,0,0,Math.PI*2);ctx.fill();ctx.fillStyle='#d99b72';ctx.beginPath();ctx.arc(0,-7,7,0,Math.PI*2);ctx.fill();ctx.fillStyle='#f0eee5';ctx.fillRect(-7,1,14,10);ctx.restore()}
 ctx.restore();drawMini();requestAnimationFrame(draw)}
 function car(x,y,col,a){ctx.save();ctx.translate(x,y);ctx.rotate(a);ctx.fillStyle='#0004';ctx.fillRect(-23,-11+4,48,25);ctx.fillStyle=col;ctx.fillRect(-24,-13,48,24);ctx.fillStyle='#233d4a';ctx.fillRect(-12,-10,22,18);ctx.fillStyle='#dbe6df';ctx.fillRect(18,-9,4,5);ctx.fillRect(18,4,4,5);ctx.restore()}
