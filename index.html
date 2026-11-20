@@ -2,96 +2,24 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#091522"><title>EPA-YA-BISO | Kinshasa</title>
-<style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#101b20;color:#fff;font-family:Inter,system-ui,Arial}canvas{width:100%;height:100%;display:block;touch-action:none}
-#ui{position:fixed;inset:0;pointer-events:none}.top{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.brand,.chip,.info,.mapframe,.help{background:#07131be8;border:1px solid #ffffff25;box-shadow:0 8px 25px #0005;backdrop-filter:blur(10px)}.brand{padding:10px 13px;border-radius:14px}.brand b{display:block;color:#f6c65d;letter-spacing:2px;font-size:15px}.brand small{font-size:9px;color:#a9c3c4;letter-spacing:1.5px}.chip{border-radius:30px;padding:9px 12px;font-size:11px}.info{position:absolute;left:12px;bottom:12px;padding:11px 13px;border-radius:13px;max-width:210px;font-size:11px;line-height:1.5}.info strong{display:block;color:#ffd36b;font-size:12px}.mapframe{position:absolute;right:12px;bottom:12px;width:120px;height:88px;border-radius:10px;overflow:hidden}#mini{width:100%;height:100%}.controls{position:absolute;right:14px;bottom:116px;display:grid;grid-template-columns:48px 48px 48px;grid-template-rows:46px 46px;gap:5px;pointer-events:auto}.ctrl,.act{background:#071522e8;color:white;border:1px solid #ffffff50;border-radius:12px;font-size:20px;touch-action:none}.ctrl:active,.act:active{background:#9a6a22}.up{grid-column:2}.left{grid-column:1;grid-row:2}.down{grid-column:2;grid-row:2}.right{grid-column:3;grid-row:2}.act{position:absolute;right:14px;bottom:220px;padding:11px 13px;font-size:10px;font-weight:800;letter-spacing:.5px;pointer-events:auto;border-color:#f6c65d88}.help{position:absolute;top:70px;left:50%;transform:translateX(-50%);border-radius:20px;padding:7px 11px;font-size:10px;white-space:nowrap;color:#e7eeee}.toast{position:absolute;top:45%;left:50%;transform:translate(-50%,-50%);background:#07131bf2;border:1px solid #f6c65d88;padding:14px 17px;border-radius:14px;font-size:13px;text-align:center;opacity:0;transition:opacity .2s;max-width:85%}.toast.on{opacity:1}.err{position:absolute;inset:15% 6% auto;background:#581f1f;color:#fff;padding:14px;border-radius:12px;display:none;pointer-events:auto}
-@media(min-width:750px){.controls{right:25px;bottom:28px;transform:scale(1.2);transform-origin:bottom right}.act{right:25px;bottom:160px}.info{left:22px;bottom:22px}.mapframe{right:22px;bottom:22px;width:150px;height:110px}}
-</style></head>
+<meta name="theme-color" content="#091522"><title>EPA-YA-BISO — Kinshasa 3D</title>
+<link rel="stylesheet" href="./style.css">
+</head>
 <body>
-<canvas id="world"></canvas>
-<div id="ui">
- <div class="top"><div class="brand"><b>EPA-YA-BISO</b><small>KINSHASA • DÉMO URBAINE 02</small></div><div class="chip" id="district">📍 GOMBE</div></div>
- <div class="help">Explore Kin • flèches tactiles ou clavier</div>
- <div class="info"><strong id="vehicleMode">À PIED</strong><span id="message">Bienvenue na Kinshasa !</span><br><span style="color:#91a7ad">Démo jouable • Monde ouvert</span></div>
- <button class="act" id="action">ENTRER DANS UN TAXI</button>
- <div class="controls"><button class="ctrl up" data-k="up">▲</button><button class="ctrl left" data-k="left">◀</button><button class="ctrl down" data-k="down">▼</button><button class="ctrl right" data-k="right">▶</button></div>
- <div class="mapframe"><canvas id="mini"></canvas></div><div class="toast" id="toast"></div><div class="err" id="err"></div>
+<canvas id="game"></canvas>
+<div id="hud">
+  <header><div class="logo"><b>EPA-YA-BISO</b><small>KINSHASA • PROTOTYPE 3D</small></div><div id="district">GOMBE</div></header>
+  <div id="mission"><b>EXPLORATION LIBRE</b><span>Découvre la ville. Approche un taxi jaune pour monter.</span></div>
+  <div id="status">À PIED · Bienvenue na Kinshasa !</div>
+  <div id="controls">
+    <div class="pad">
+      <button data-key="forward">▲</button>
+      <div><button data-key="left">◀</button><button data-key="back">▼</button><button data-key="right">▶</button></div>
+    </div>
+    <button id="interact">MONTER DANS UN TAXI</button>
+  </div>
+  <div id="crosshair">+</div>
+  <div id="loading">EPA-YA-BISO<br><small>Chargement de Kinshasa…</small></div>
 </div>
-<script>
-(()=>{
-'use strict';
-const canvas=document.getElementById('world'),g=canvas.getContext('2d'),mini=document.getElementById('mini'),mg=mini.getContext('2d');
-let W=innerWidth,H=innerHeight,D=Math.min(devicePixelRatio||1,2);
-function resize(){W=innerWidth;H=innerHeight;D=Math.min(devicePixelRatio||1,2);canvas.width=W*D;canvas.height=H*D;g.setTransform(D,0,0,D,0,0);mini.width=240;mini.height=176;}
-addEventListener('resize',resize);resize();
-const MW=2600,MH=1900;
-const roads=[
-{x:0,y:330,w:2600,h:142,n:'BOULEVARD DU 30 JUIN'},
-{x:0,y:820,w:2600,h:150,n:'AVENUE KASA-VUBU'},
-{x:0,y:1370,w:2600,h:150,n:'BOULEVARD LUMUMBA'},
-{x:390,y:0,w:140,h:1900,n:'AVENUE DES HUILERIES'},
-{x:1110,y:0,w:150,h:1900,n:'AVENUE DE LA LIBÉRATION'},
-{x:1880,y:0,w:150,h:1900,n:'AVENUE SENDWE'}
-];
-const buildings=[
-{x:90,y:90,w:210,h:170,name:'GARE CENTRALE',kind:'station',color:'#d7c5a0',sub:'PLACE DU 30 JUIN'},
-{x:600,y:80,w:260,h:185,name:'POSTE CENTRALE',kind:'civic',color:'#dfc49a',sub:'BOULEVARD DU 30 JUIN'},
-{x:1390,y:75,w:250,h:200,name:'IMMEUBLE SOZACOM',kind:'tower',color:'#a9b7bd',sub:'GOMBE'},
-{x:2130,y:80,w:280,h:190,name:'GRAND MARCHÉ',kind:'market',color:'#c68a52',sub:'MARCHÉ CENTRAL'},
-{x:80,y:520,w:270,h:205,name:'PLACE DES ARTISTES',kind:'plaza',color:'#d8b77d',sub:'ROND-POINT VICTOIRE • MATONGE'},
-{x:650,y:520,w:300,h:205,name:'RTNC',kind:'civic',color:'#c7b58c',sub:'RADIO-TÉLÉVISION NATIONALE'},
-{x:1380,y:525,w:310,h:210,name:'PALAIS DU PEUPLE',kind:'palace',color:'#d5c8ad',sub:'LINGWALA'},
-{x:2140,y:520,w:300,h:205,name:'STADE DES MARTYRS',kind:'stadium',color:'#b8c5a0',sub:'KINSHASA'},
-{x:90,y:1050,w:280,h:220,name:'ACADÉMIE DES BEAUX-ARTS',kind:'school',color:'#d2a878',sub:'GOMBE / LINGWALA'},
-{x:660,y:1050,w:290,h:220,name:'MARCHÉ DE MATONGÉ',kind:'market',color:'#c98b52',sub:'MATONGE'},
-{x:1370,y:1050,w:330,h:230,name:'PLACE COMMERCIALE LIMETE',kind:'shops',color:'#d7b77e',sub:'7e RUE • LIMETE'},
-{x:2150,y:1050,w:290,h:230,name:'STADE TATA RAPHAËL',kind:'stadium',color:'#b6c49c',sub:'KALAMU'},
-{x:90,y:1600,w:300,h:210,name:'TOUR DE L’ÉCHANGEUR',kind:'monument',color:'#c8b9a0',sub:'LIMETE'},
-{x:700,y:1600,w:260,h:200,name:'MONUMENT LUMUMBA',kind:'monument',color:'#c7b18a',sub:'ESPLANADE DE L’ÉCHANGEUR'},
-{x:1420,y:1600,w:290,h:200,name:'PALAIS DE LA NATION',kind:'palace',color:'#d8c7a5',sub:'GOMBE'},
-{x:2160,y:1600,w:270,h:200,name:'JARDIN BOTANIQUE',kind:'park',color:'#6f9a68',sub:'KINSHASA'}
-];
-const trees=[];for(let i=0;i<190;i++){let x=(i*173+55)%MW,y=(i*257+35)%MH;if(!roads.some(r=>x>r.x-20&&x<r.x+r.w+20&&y>r.y-20&&y<r.y+r.h+20)&&!buildings.some(b=>x>b.x-20&&x<b.x+b.w+20&&y>b.y-20&&y<b.y+b.h+20))trees.push({x,y,r:7+(i%7)})}
-const stalls=[];for(let i=0;i<30;i++)stalls.push({x:520+(i%15)*48,y:305+Math.floor(i/15)*18,c:['#e9b94c','#c84f3f','#399b87','#e7d7b1'][i%4]});
-const cars=[];for(let i=0;i<20;i++){let road=roads[i%3],x=130+(i*311)%(MW-250),y=road.y+34+(i%2)*54;cars.push({x,y,a:0,type:i%4===0?'minibus':'taxi',color:i%4===0?'#e8e1cf':'#f0c63f',occupied:false})}
-const player={x:1040,y:400,a:0,inCar:-1};const keys={};let cam={x:0,y:0};let toastTimer;
-function toast(s){const e=document.getElementById('toast');e.textContent=s;e.classList.add('on');clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.classList.remove('on'),2100)}
-function zone(){if(player.y<460)return'GOMBE';if(player.y<1000)return'MATONGE • LINGWALA';if(player.y<1550)return'LIMETE • KALAMU';return'LIMETE'}
-function rounded(x,y,w,h,r,color){g.fillStyle=color;g.beginPath();g.roundRect(x,y,w,h,r);g.fill()}
-function drawBuilding(b){g.fillStyle='#0003';g.fillRect(b.x+9,b.y+12,b.w,b.h);rounded(b.x,b.y,b.w,b.h,5,b.color);g.fillStyle='#8c745d';g.fillRect(b.x,b.y,b.w,13);
-if(b.kind==='tower'){for(let yy=b.y+24;yy<b.y+b.h-15;yy+=25)for(let xx=b.x+14;xx<b.x+b.w-10;xx+=27){g.fillStyle='#4d7480';g.fillRect(xx,yy,16,15)}}
-else if(b.kind==='stadium'){g.fillStyle='#748d68';g.beginPath();g.ellipse(b.x+b.w/2,b.y+b.h/2,b.w*.39,b.h*.32,0,0,Math.PI*2);g.fill();g.strokeStyle='#f2e6c8';g.lineWidth=8;g.beginPath();g.ellipse(b.x+b.w/2,b.y+b.h/2,b.w*.43,b.h*.37,0,0,Math.PI*2);g.stroke();g.fillStyle='#d6c49f';g.fillRect(b.x+b.w*.35,b.y+b.h*.38,b.w*.3,b.h*.23)}
-else if(b.kind==='market'){for(let yy=b.y+26;yy<b.y+b.h-18;yy+=38)for(let xx=b.x+15;xx<b.x+b.w-15;xx+=42){g.fillStyle=['#e2b14b','#c64f3e','#3d9581','#e6d3a8'][(Math.floor(xx+yy)/7|0)%4];g.fillRect(xx,yy,31,25);g.fillStyle='#fff8';g.fillRect(xx,yy,31,5)}}
-else if(b.kind==='park'){g.fillStyle='#447b4e';for(let i=0;i<25;i++){g.beginPath();g.arc(b.x+20+(i*47)% (b.w-35),b.y+25+(i*31)%(b.h-40),8,0,7);g.fill()}}
-else {for(let yy=b.y+30;yy<b.y+b.h-20;yy+=38)for(let xx=b.x+18;xx<b.x+b.w-15;xx+=42){g.fillStyle=b.kind==='palace'?'#887a65':'#557783';g.fillRect(xx,yy,23,20)}}
-g.fillStyle='#16262b';g.font='bold 12px Arial';g.fillText(b.name,b.x+10,b.y+b.h+19);g.fillStyle='#f6e7c5';g.font='10px Arial';g.fillText(b.sub,b.x+10,b.y+b.h+33)}
-function drawRoad(r){g.fillStyle='#4d5150';g.fillRect(r.x,r.y,r.w,r.h);g.fillStyle='#5c6060';g.fillRect(r.x,r.y+8,r.w,r.h-16);g.strokeStyle='#e6d59b';g.lineWidth=3;g.setLineDash([30,24]);g.beginPath();if(r.w>r.h){g.moveTo(r.x,r.y+r.h/2);g.lineTo(r.x+r.w,r.y+r.h/2)}else{g.moveTo(r.x+r.w/2,r.y);g.lineTo(r.x+r.w/2,r.y+r.h)}g.stroke();g.setLineDash([]);g.fillStyle='#f1e8d4';g.font='bold 11px Arial';g.fillText(r.n,r.x+20,r.y+20)}
-function drawCar(c){g.save();g.translate(c.x,c.y);g.rotate(c.a);g.fillStyle='#0005';g.fillRect(-22,-9,48,25);g.fillStyle=c.color;g.fillRect(-24,-13,48,24);g.fillStyle='#294a57';g.fillRect(-12,-10,23,18);g.fillStyle='#fff2d4';g.fillRect(18,-9,5,5);g.fillRect(18,4,5,5);g.fillStyle='#222';g.fillRect(-17,-15,9,3);g.fillRect(9,-15,9,3);if(c.type==='minibus'){g.fillStyle='#c73f32';g.fillRect(-5,-13,9,24)}g.restore()}
-function drawPlayer(){g.save();g.translate(player.x,player.y);g.rotate(player.a);g.fillStyle='#172c34';g.beginPath();g.ellipse(0,4,10,13,0,0,7);g.fill();g.fillStyle='#c98760';g.beginPath();g.arc(0,-9,7,0,7);g.fill();g.fillStyle='#f0dfb4';g.fillRect(-7,0,14,11);g.restore()}
-function drawMini(){mg.clearRect(0,0,240,176);mg.fillStyle='#8a9a7b';mg.fillRect(0,0,240,176);mg.fillStyle='#4e5554';roads.forEach(r=>mg.fillRect(r.x/MW*240,r.y/MH*176,Math.max(2,r.w/MW*240),Math.max(2,r.h/MH*176)));mg.fillStyle='#d5c49f';buildings.forEach(b=>mg.fillRect(b.x/MW*240,b.y/MH*176,b.w/MW*240,b.h/MH*176));mg.fillStyle='#ffd45d';mg.beginPath();mg.arc(player.x/MW*240,player.y/MH*176,4,0,7);mg.fill()}
-function render(){g.clearRect(0,0,W,H);const tx=Math.max(0,Math.min(MW-W,player.x-W/2)),ty=Math.max(0,Math.min(MH-H,player.y-H/2));cam.x+=(tx-cam.x)*.14;cam.y+=(ty-cam.y)*.14;g.save();g.translate(-cam.x,-cam.y);g.fillStyle='#87977a';g.fillRect(0,0,MW,MH);
-for(let x=0;x<MW;x+=100)for(let y=0;y<MH;y+=100){g.fillStyle=((x+y)/100|0)%2?'#829477':'#8d9b7d';g.fillRect(x,y,100,100)}
-// Fleuve Congo au nord de la zone urbaine
-g.fillStyle='#477f91';g.fillRect(0,0,MW,65);g.fillStyle='#6fa5b1';g.font='italic 17px Arial';g.fillText('FLEUVE CONGO',90,42);
-trees.forEach(t=>{g.fillStyle='#315d3d';g.beginPath();g.arc(t.x,t.y,t.r,0,7);g.fill();g.fillStyle='#4b8050';g.beginPath();g.arc(t.x-3,t.y-3,t.r*.65,0,7);g.fill()});
-roads.forEach(drawRoad);buildings.forEach(drawBuilding);
-stalls.forEach(s=>{g.fillStyle=s.c;g.fillRect(s.x,s.y,34,20);g.fillStyle='#fff8';g.fillRect(s.x,s.y,34,4)});
-cars.forEach((c,i)=>{if(player.inCar!==i)drawCar(c)});
-if(player.inCar>=0)drawCar({x:player.x,y:player.y,a:player.a,color:cars[player.inCar].color,type:cars[player.inCar].type});else drawPlayer();
-g.restore();drawMini();
-document.getElementById('district').textContent='📍 '+zone();document.getElementById('vehicleMode').textContent=player.inCar>=0?'AU VOLANT • '+(cars[player.inCar].type==='minibus'?'MINIBUS':'TAXI'):'À PIED';
-document.getElementById('action').textContent=player.inCar>=0?'SORTIR DU VÉHICULE':'ENTRER DANS UN TAXI';requestAnimationFrame(loop)}
-function update(dt){let dx=0,dy=0;if(keys.left||keys.a)dx--;if(keys.right||keys.d)dx++;if(keys.up||keys.w)dy--;if(keys.down||keys.s)dy++;if(dx||dy){let n=Math.hypot(dx,dy);dx/=n;dy/=n;player.a=Math.atan2(dy,dx);let speed=player.inCar>=0?250:145;player.x+=dx*speed*dt;player.y+=dy*speed*dt;if(player.inCar>=0){cars[player.inCar].x=player.x;cars[player.inCar].y=player.y;cars[player.inCar].a=player.a}}
-player.x=Math.max(25,Math.min(MW-25,player.x));player.y=Math.max(80,Math.min(MH-25,player.y))}
-function loop(t){let dt=Math.min((t-(loop.last||t))/1000,.035);loop.last=t;update(dt);renderFrame()}
-function renderFrame(){g.clearRect(0,0,W,H);const tx=Math.max(0,Math.min(MW-W,player.x-W/2)),ty=Math.max(0,Math.min(MH-H,player.y-H/2));cam.x+=(tx-cam.x)*.14;cam.y+=(ty-cam.y)*.14;g.save();g.translate(-cam.x,-cam.y);g.fillStyle='#87977a';g.fillRect(0,0,MW,MH);for(let x=0;x<MW;x+=100)for(let y=65;y<MH;y+=100){g.fillStyle=((x+y)/100|0)%2?'#829477':'#8d9b7d';g.fillRect(x,y,100,100)}g.fillStyle='#477f91';g.fillRect(0,0,MW,65);g.fillStyle='#c2e3e5';g.font='italic 17px Arial';g.fillText('FLEUVE CONGO',90,42);trees.forEach(t=>{g.fillStyle='#315d3d';g.beginPath();g.arc(t.x,t.y,t.r,0,7);g.fill();g.fillStyle='#4b8050';g.beginPath();g.arc(t.x-3,t.y-3,t.r*.65,0,7);g.fill()});roads.forEach(drawRoad);buildings.forEach(drawBuilding);stalls.forEach(s=>{g.fillStyle=s.c;g.fillRect(s.x,s.y,34,20);g.fillStyle='#fff8';g.fillRect(s.x,s.y,34,4)});cars.forEach((c,i)=>{if(player.inCar!==i)drawCar(c)});if(player.inCar>=0)drawCar({x:player.x,y:player.y,a:player.a,color:cars[player.inCar].color,type:cars[player.inCar].type});else drawPlayer();g.restore();drawMini();document.getElementById('district').textContent='📍 '+zone();document.getElementById('vehicleMode').textContent=player.inCar>=0?'AU VOLANT • '+(cars[player.inCar].type==='minibus'?'MINIBUS':'TAXI'):'À PIED';document.getElementById('action').textContent=player.inCar>=0?'SORTIR DU VÉHICULE':'ENTRER DANS UN TAXI';requestAnimationFrame(loop)}
-function nearestCar(){let best=-1,dist=90;cars.forEach((c,i)=>{let d=Math.hypot(c.x-player.x,c.y-player.y);if(d<dist){dist=d;best=i}});return best}
-document.getElementById('action').addEventListener('click',()=>{if(player.inCar>=0){let c=cars[player.inCar];c.x=player.x+38;c.y=player.y+10;c.occupied=false;player.inCar=-1;toast('Tu es descendu du véhicule.');return}let i=nearestCar();if(i<0){toast('Approche-toi d’un taxi jaune ou d’un minibus.');return}if(cars[i].occupied){toast('Ce véhicule est déjà occupé.');return}player.inCar=i;cars[i].occupied=true;player.x=cars[i].x;player.y=cars[i].y;toast('Véhicule pris en charge. Tokende !')});
-document.querySelectorAll('[data-k]').forEach(b=>{let k=b.dataset.k;b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true;b.setPointerCapture(e.pointerId)});['pointerup','pointercancel','lostpointercapture'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false))});
-const keymap={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'};addEventListener('keydown',e=>{keys[keymap[e.key]||e.key.toLowerCase()]=true});addEventListener('keyup',e=>{keys[keymap[e.key]||e.key.toLowerCase()]=false});
-addEventListener('error',e=>{let el=document.getElementById('err');el.style.display='block';el.textContent='Erreur de jeu : '+e.message+' — recharge la page.'});
-toast('Bienvenue na EPA-YA-BISO !');
-requestAnimationFrame(loop);
-})();
-</script></body></html>
+<script type="module" src="./game.js"></script>
+</body></html>
