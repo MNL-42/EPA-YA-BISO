@@ -15,6 +15,21 @@ const c=document.getElementById('game'),ctx=c.getContext('2d');let W=0,H=0,dpr=1
 function resize(){dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}addEventListener('resize',resize);resize();
 const world={w:2400,h:1800};const roads=[{x:0,y:380,w:2400,h:150},{x:0,y:940,w:2400,h:160},{x:460,y:0,w:150,h:1800},{x:1430,y:0,w:150,h:1800},{x:0,y:1450,w:2400,h:130}];
 const blocks=[];for(let y=40;y<world.h-100;y+=290)for(let x=40;x<world.w-100;x+=310){if(roads.some(r=>x<r.x+r.w+20&&x+235>r.x-20&&y<r.y+r.h+20&&y+185>r.y-20))continue;blocks.push({x,y,w:180+((x+y)%50),h:115+((x*3+y)%50),color:['#d5b58a','#bd9c78','#c8c2aa','#a9b39a','#d3c6a6'][Math.floor((x+y)/100)%5],name:['PARCELLE','BOUTIQUE','MAISON','ATELIER'][Math.floor((x*7+y)/130)%4]})}
+const landmarks=[
+{x:120,y:90,w:190,h:115,name:'GARE CENTRALE',fill:'#d9c9a6',roof:'#8e5545'},
+{x:690,y:105,w:220,h:135,name:'MUSÉE NATIONAL RDC',fill:'#e4ddc9',roof:'#a45d43'},
+{x:1080,y:95,w:210,h:125,name:'PALAIS DE LA NATION',fill:'#e8d4ae',roof:'#8d684d'},
+{x:1720,y:110,w:210,h:125,name:'HÔTEL MEMLING',fill:'#c9d2ca',roof:'#526e78'},
+{x:150,y:590,w:230,h:140,name:'GRAND MARCHÉ ZANDO',fill:'#d7a65f',roof:'#b64b37'},
+{x:720,y:585,w:210,h:140,name:'ÉGLISE SAINTE-ANNE',fill:'#c77b57',roof:'#853c31'},
+{x:1110,y:590,w:220,h:145,name:'RTNC',fill:'#d6c9b5',roof:'#934b40'},
+{x:1690,y:590,w:245,h:150,name:'PALAIS DU PEUPLE',fill:'#d9d1bd',roof:'#766d61'},
+{x:190,y:1110,w:220,h:140,name:'MARCHÉ GAMBELA',fill:'#d7a65f',roof:'#a54b38'},
+{x:720,y:1110,w:245,h:145,name:'STADE DES MARTYRS',fill:'#91a78d',roof:'#456b53'},
+{x:1160,y:1110,w:235,h:145,name:'CENTRE CULTUREL GRAND TAMBOUR',fill:'#ddc9a7',roof:'#b27a43'},
+{x:1700,y:1110,w:235,h:145,name:'TOUR DE L’ÉCHANGEUR',fill:'#d5c9ae',roof:'#9b815d'}
+];
+function drawLandmark(b){ctx.fillStyle='#0005';ctx.fillRect(b.x+8,b.y+10,b.w,b.h);rect(b.x,b.y,b.w,b.h,b.fill);rect(b.x,b.y,b.w,18,b.roof);for(let xx=b.x+15;xx<b.x+b.w-15;xx+=38){rect(xx,b.y+35,21,25,'#526b70');rect(xx,b.y+75,21,25,'#526b70')}rect(b.x+b.w/2-13,b.y+b.h-32,26,32,'#76513b');ctx.fillStyle='#fff0c2';ctx.font='bold 10px Arial';ctx.textAlign='center';ctx.strokeStyle='#17211f';ctx.lineWidth=3;ctx.strokeText(b.name,b.x+b.w/2,b.y+b.h+16);ctx.fillText(b.name,b.x+b.w/2,b.y+b.h+16)}
 const props=[];for(let i=0;i<75;i++){let x=(i*197+130)%world.w,y=(i*283+80)%world.h;if(!roads.some(r=>x>r.x&&x<r.x+r.w&&y>r.y&&y<r.y+r.h))props.push({x,y})}
 let player={x:780,y:650,angle:0,inCar:false,speed:0};let keys={};let last=0,cam={x:0,y:0};let toastTimer=0;
 function say(t){let el=document.getElementById('toast');el.textContent=t;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),1800)}
@@ -26,6 +41,7 @@ rect(0,0,world.w,world.h,'#87977d');
 for(let x=0;x<world.w;x+=90)for(let y=0;y<world.h;y+=90){ctx.fillStyle=((x+y)/90)%2?'#829378':'#899a80';ctx.fillRect(x,y,90,90)}
 roads.forEach(drawRoad);
 blocks.forEach(b=>{ctx.fillStyle='#0003';ctx.fillRect(b.x+9,b.y+12,b.w,b.h);rect(b.x,b.y,b.w,b.h,b.color);rect(b.x,b.y,b.w,12,'#8b715b');rect(b.x+12,b.y+25,22,20,'#526c70');rect(b.x+48,b.y+25,22,20,'#526c70');rect(b.x+85,b.y+25,22,20,'#526c70');rect(b.x+12,b.y+65,35,35,'#987d60');ctx.fillStyle='#352e28';ctx.font='10px Arial';ctx.fillText(b.name,b.x+10,b.y+b.h+14)});
+landmarks.forEach(drawLandmark);
 props.forEach(p=>{ctx.fillStyle='#315d3c';ctx.beginPath();ctx.arc(p.x,p.y,9,0,Math.PI*2);ctx.fill();ctx.fillStyle='#487a4c';ctx.beginPath();ctx.arc(p.x-3,p.y-4,6,0,Math.PI*2);ctx.fill()});
 // road-side market stalls
 for(let i=0;i<15;i++){let x=80+i*145,y=350;rect(x,y,48,25,['#e6b44e','#d65d43','#4d9b8c'][i%3]);rect(x+5,y+5,38,4,'#fff8')}
